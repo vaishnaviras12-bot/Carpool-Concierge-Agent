@@ -57,6 +57,9 @@ carpool_agent/
 
 
 HOW TO RUN 
+-Clone the repo
+git clone https://github.com/vaishnaviras12-bot/carpool-concierge-agent
+cd carpool-concierge-agent
 
 -Install dependencies 
 pip install flask 
