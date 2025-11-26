@@ -1,0 +1,102 @@
+{
+  "users": {
+    "m": {
+      "prefs": {
+        "last_request": {
+          "user_id": "m",
+          "lat": 40.7128,
+          "lon": -74.006,
+          "dest_lat": 41.8781,
+          "dest_lon": -87.6298,
+          "seats_needed": 3,
+          "time": 1764023400
+        }
+      },
+      "last_seen": 1763843499.8616529
+    },
+    "anon": {
+      "prefs": {
+        "last_request": {
+          "user_id": "si",
+          "lat": 40.7128,
+          "lon": -74.006,
+          "dest_lat": 33.4484,
+          "dest_lon": -112.074,
+          "seats_needed": 1,
+          "time": 1764243240
+        }
+      },
+      "last_seen": 1763897682.9090183
+    },
+    "TestUser": {
+      "prefs": {
+        "last_request": {
+          "user_id": "TestUser",
+          "lat": 40.7128,
+          "lon": -74.006,
+          "dest_lat": 34.0522,
+          "dest_lon": -118.2437,
+          "seats_needed": 2,
+          "time": 1708792200
+        }
+      },
+      "last_seen": 1763874669.8087707
+    },
+    "s": {
+      "prefs": {
+        "last_request": {
+          "id": "s",
+          "lat": 40.7128,
+          "lon": -74.006,
+          "dest_lat": 34.0522,
+          "dest_lon": -118.2437,
+          "seats_needed": 1,
+          "time": 1764353280
+        }
+      },
+      "last_seen": 1763903343.7289407
+    },
+    "Shrestha": {
+      "prefs": {
+        "last_request": {
+          "id": "Shrestha",
+          "lat": 40.7128,
+          "lon": -74.006,
+          "dest_lat": 42.3601,
+          "dest_lon": -71.0589,
+          "seats_needed": 1,
+          "time": 1764421200
+        }
+      },
+      "last_seen": 1763895537.8784661
+    },
+    "nb": {
+      "prefs": {
+        "last_request": {
+          "id": "nb",
+          "lat": 40.7128,
+          "lon": -74.006,
+          "dest_lat": 34.0522,
+          "dest_lon": -118.2437,
+          "seats_needed": 1,
+          "time": 1763725020
+        }
+      },
+      "last_seen": 1763897830.167316
+    },
+    "vaishnavi rastogi": {
+      "prefs": {
+        "last_request": {
+          "id": "vaishnavi rastogi",
+          "lat": 40.7128,
+          "lon": -74.006,
+          "dest_lat": 37.7749,
+          "dest_lon": -122.4194,
+          "seats_needed": 1,
+          "time": 1764346500
+        }
+      },
+      "last_seen": 1763900378.0354688
+    }
+  }
+}

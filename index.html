@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ORBIS - RideMatcher</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #001f3f, #003d70, #005a96);
+    margin: 0; color: white;
+}
+.container {
+    width: 90%; max-width: 650px; margin: 60px auto;
+    background: rgba(255,255,255,0.08); backdrop-filter: blur(15px);
+    padding: 25px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.25);
+}
+h1 { text-align: center; margin-bottom: 26px; font-size: 32px; font-weight: 800; letter-spacing: 1px; }
+label { font-size: 16px; margin-top: 8px; display: block; }
+input, select { width: 100%; padding: 12px; margin-top: 6px; border-radius: 12px; border: none; outline: none; }
+button { width: 100%; padding: 14px; margin-top: 20px; border-radius: 12px; border: none; cursor: pointer; font-size: 17px; font-weight: bold; background: #00c2ff; color: black; }
+.result-box { margin-top: 30px; background: rgba(255,255,255,0.1); padding: 18px; border-radius: 12px; }
+.ride-card { background: rgba(255,255,255,0.15); padding: 12px; border-radius: 12px; margin-bottom: 12px; cursor: pointer; transition: transform 0.2s; }
+.ride-card:hover { transform: scale(1.03); }
+.loader { border: 5px solid rgba(255,255,255,0.2); border-top: 5px solid #00c2ff; border-radius: 50%; width: 42px; height: 42px; animation: spin 1s linear infinite; margin: 12px auto; }
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+.popup { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); justify-content:center; align-items:center; z-index:100; }
+.popup-content { background: #edd3d3; color:#000; padding:20px; border-radius:15px; width:300px; text-align:center; border:1px solid #000000; }
+.popup-content button { background:#00c2ff; color:#000; margin-top:15px; }
+
+#chatbot-btn { position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px; border-radius: 50%; border: none; background: #00c2ff; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 0 15px #00c2ff90; z-index: 9999; }
+#chat-window { position: fixed; bottom: 95px; right: 25px; width: 340px; height: 470px; background: rgba(255,255,255,0.15); backdrop-filter: blur(12px); border-radius: 18px; border: 1px solid rgba(255,255,255,0.35); display: none; flex-direction: column; overflow: hidden; z-index: 99999; }
+#chat-header { display: flex; align-items: center; gap: 10px; padding: 12px; background: rgba(0,0,0,0.35); cursor: move; }
+#chat-header img { width: 40px; height: 40px; border-radius: 50%; }
+#chat-header span { color: white; font-size: 20px; font-weight: 700; }
+#chat-body { flex: 1; overflow-y: auto ; padding: 10px; word-wrap: break-word; overflow-wrap: break-word;}
+.msg { max-width: 80%; padding: 9px 12px; margin-bottom: 8px; border-radius: 14px; font-size: 15px; }
+.user-msg { background: #00c2ff; color: #000; margin-left: auto; }
+.bot-msg { background: rgba(0,0,0,0.6); color: #fff; margin-right: auto; display: flex; gap: 8px; align-items: flex-start; }
+.bot-msg img {display : none; }
+#chat-input { display: flex; padding: 10px; gap: 4px; background: rgba(0,0,0,0.25); }
+#chat-input input { flex: 0 0 80%; border-radius: 12px; border: none; padding: 10px; outline: none; }
+#chat-input button { flex: 1; border: none; background: #00c2ff; border-radius: 10px; padding: 0 8px; font-weight: bold; cursor: pointer; font-size: 10px; }
+
+#menu-btn { position:fixed; top:20px; right:20px; cursor:pointer; font-size:24px; z-index:10000; }
+</style>
+</head>
+<body>
+
+<div class="container">
+<h1>ORBIS RideMatcher</h1>
+<label>Your Name</label>
+<input type="text" id="userName" placeholder="Enter your name">
+
+<label>From</label>
+<select id="from">
+    <option value="" selected disabled>Select city</option>
+    <option>Delhi</option><option>Mumbai</option><option>Bangalore</option><option>Hyderabad</option><option>Chennai</option>
+    <option>Jaipur</option><option>Sikkim</option><option>Goa</option><option>Dehradun</option><option>Chandigarh</option>
+    <option>Ladakh</option><option>Srinagar</option><option>Patna</option><option>Bhopal</option><option>Shimla</option>
+    <option>Lucknow</option><option>Noida</option>
+</select>
+
+<label>To</label>
+<select id="to">
+    <option value="" selected disabled>Select city</option>
+    <option>Mumbai</option><option>Delhi</option><option>Bangalore</option><option>Hyderabad</option><option>Chennai</option>
+    <option>Jaipur</option><option>Sikkim</option><option>Goa</option><option>Dehradun</option><option>Chandigarh</option>
+    <option>Ladakh</option><option>Srinagar</option><option>Patna</option><option>Bhopal</option><option>Shimla</option>
+    <option>Lucknow</option><option>Noida</option>
+</select>
+
+<label>Seats Needed</label>
+<input type="number" id="seats" min="1" max="6" value="1">
+
+<button onclick="searchRide()">Search</button>
+
+<div id="result" class="result-box" style="display:none;"></div>
+</div>
+
+<!-- Payment Popup -->
+<div class="popup" id="paymentPopup">
+    <div class="popup-content">
+        <h3>Payment</h3>
+        <p id="paymentText">Processing payment...</p>
+        <button onclick="closePayment()">Close</button>
+    </div>
+</div>
+
+<!-- Driver Registration Menu -->
+<div id="menu-btn">⋮</div>
+<div class="popup" id="driverPopup">
+    <div class="popup-content">
+        <h3>Driver Registration</h3>
+        <label>Name</label><input type="text" id="driverName" placeholder="Your Name">
+        <label>Vehicle</label><input type="text" id="driverVehicle" placeholder="Vehicle Type">
+        <label>Seats</label><input type="number" id="driverSeats" min="1" max="6" value="1">
+        <label>From</label>
+        <select id="driverFrom">
+            <option value="" selected disabled>Select city</option>
+            <option>Mumbai</option><option>Delhi</option><option>Bangalore</option><option>Hyderabad</option><option>Chennai</option>
+            <option>Jaipur</option><option>Sikkim</option><option>Goa</option><option>Dehradun</option><option>Chandigarh</option>
+            <option>Ladakh</option><option>Srinagar</option><option>Patna</option><option>Bhopal</option><option>Shimla</option>
+            <option>Lucknow</option><option>Noida</option>
+        </select>
+        <label>To</label>
+        <select id="driverTo">
+            <option value="" selected disabled>Select city</option>
+            <option>Mumbai</option><option>Delhi</option><option>Bangalore</option><option>Hyderabad</option><option>Chennai</option>
+            <option>Jaipur</option><option>Sikkim</option><option>Goa</option><option>Dehradun</option><option>Chandigarh</option>
+            <option>Ladakh</option><option>Srinagar</option><option>Patna</option><option>Bhopal</option><option>Shimla</option>
+            <option>Lucknow</option><option>Noida</option>
+        </select>
+        <button onclick="registerDriver()">Register</button>
+        <button onclick="closeDriverPopup()">Close</button>
+    </div>
+</div>
+
+<!-- ORBIS Chatbot -->
+<button id="chatbot-btn"><img src="https://cdn-icons-png.flaticon.com/512/4712/4712106.png" width="36"></button>
+<div id="chat-window">
+    <div id="chat-header">
+        <img src="https://cdn-icons-png.flaticon.com/512/4712/4712106.png">
+        <span>Orbis</span>
+    </div>
+    <div id="chat-body"></div>
+    <div id="chat-input">
+        <input id="chat-text" placeholder="Message Orbis..." onkeydown="if(event.key==='Enter'){sendChat();}">
+        <button onclick="sendChat()">Send</button>
+    </div>
+</div>
+
+<script>
+// City coordinates
+const cityCoords = {
+"Delhi":[28.6139,77.2090],"Mumbai":[19.0760,72.8777],"Bangalore":[12.9716,77.5946],
+"Hyderabad":[17.3850,78.4867],"Chennai":[13.0827,80.2707],"Jaipur":[26.9124,75.7873],
+"Sikkim":[27.5330,88.5122],"Goa":[15.2993,74.1240],"Dehradun":[30.3165,78.0322],
+"Chandigarh":[30.7333,76.7794],"Ladakh":[34.1526,77.5770],"Srinagar":[34.0837,74.7973],
+"Patna":[25.5941,85.1376],"Bhopal":[23.2599,77.4126],"Shimla":[31.1048,77.1734],
+"Lucknow":[26.8467,80.9462],"Noida":[28.5355,77.3910]
+};
+
+let demoRides = [];
+function loadDrivers(){
+    fetch("/get_drivers").then(r=>r.json()).then(data=>{
+        if(data.drivers){ demoRides=data.drivers; }
+    }).catch(e=>console.log(e));
+}
+window.addEventListener("DOMContentLoaded", loadDrivers);
+
+// Search rides
+function searchRide() {
+    const userName = document.getElementById("userName").value.trim();
+    const from = document.getElementById("from").value;
+    const to = document.getElementById("to").value;
+    const seats = parseInt(document.getElementById("seats").value);
+    if(!userName){ alert("Please enter your name"); return; }
+    if(!from || !to){ alert("Please select cities"); return; }
+
+    const box = document.getElementById("result");
+    box.style.display = "block";
+    box.innerHTML = `<div class='loader'></div><center>Searching rides...</center>`;
+
+    fetch("/search_rides", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({from, to, seats})
+    })
+    .then(res => res.json())
+    .then(data => {
+        const rides = data.rides || [];
+        let html = `<b>${rides.length} ride(s) available:</b><br><br>`;
+        rides.forEach(m=>{
+            const lat1 = m.from_city ? cityCoords[m.from_city][0] : 0;
+            const lon1 = m.from_city ? cityCoords[m.from_city][1] : 0;
+            const lat2 = m.to_city ? cityCoords[m.to_city][0] : 0;
+            const lon2 = m.to_city ? cityCoords[m.to_city][1] : 0;
+            const R = 6371;
+            const dLat = (lat2-lat1)*Math.PI/180;
+            const dLon = (lon2-lon1)*Math.PI/180;
+            const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            const distKm = R*c;
+            const price = Math.round(distKm*5);
+
+            html += `<div class="ride-card" onclick="openPayment('${m.id}','${m.vehicle}',${price}, ${seats})">
+                🚘 Driver: <b>${m.id}</b><br>
+                Vehicle: ${m.vehicle}<br>
+                Seats: ${m.seats}<br>
+                Start Time: ${new Date(m.start_time*1000).toLocaleString()}<br>
+                Price: ₹${price*seats}
+            </div>`;
+        });
+        if(rides.length===0) html += "No rides found.";
+        box.innerHTML = html;
+    })
+    .catch(err => {
+        console.log(err);
+        box.innerHTML = "Error fetching rides.";
+    });
+}
+
+
+// Payment
+function openPayment(driver, vehicle, price, seats){
+    const popup=document.getElementById("paymentPopup");
+    popup.style.display="flex";
+    const paymentText=document.getElementById("paymentText");
+    paymentText.innerHTML=`<b>Pay ₹${price*seats}</b> for Driver <b>${driver}</b> (${vehicle})<br><div class="loader"></div>Confirming ride...`;
+    fetch("/confirm_ride",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({driver_id:driver,seats:seats})})
+    .then(r=>r.json()).then(job=>{
+        const poll=setInterval(()=>{
+            fetch(`/job_status/${job.job_id}`).then(r=>r.json()).then(status=>{
+                if(status.status==="completed"){
+                    fetch("/lock_seats",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({driver_id:driver,seats:seats})});
+                    paymentText.innerHTML=`✅ Ride confirmed with Driver <b>${driver}</b>!`;
+                    clearInterval(poll);
+                    loadDrivers();
+                }
+            });
+        },500);
+    }).catch(e=>paymentText.innerHTML="Error confirming ride");
+}
+function closePayment(){ document.getElementById("paymentPopup").style.display="none"; }
+
+// Driver popup
+document.getElementById("menu-btn").onclick=()=>{ const popup=document.getElementById("driverPopup"); popup.style.display=popup.style.display==="flex"?"none":"flex"; };
+function closeDriverPopup(){ document.getElementById("driverPopup").style.display="none"; }
+function registerDriver(){
+    const name=document.getElementById("driverName").value.trim();
+    const vehicle=document.getElementById("driverVehicle").value.trim();
+    const seats=parseInt(document.getElementById("driverSeats").value);
+    const from=document.getElementById("driverFrom").value;
+    const to=document.getElementById("driverTo").value;
+    if(!name || !vehicle || !seats || !from || !to){ alert("Fill all fields"); return; }
+    fetch("/register_driver",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+        id:name, vehicle, seats, lat:cityCoords[from][0], lon:cityCoords[from][1], dest_lat:cityCoords[to][0], dest_lon:cityCoords[to][1],
+        start_time:Math.floor(Date.now()/1000)+900, from_city:from, to_city:to
+    })}).then(r=>r.json()).then(d=>{ if(d.status==="driver_registered") alert(`Driver Registered: ${name} (${vehicle})`); else alert("Error"); loadDrivers(); });
+    closeDriverPopup();
+}
+
+// Chatbot
+const botPfp="https://cdn-icons-png.flaticon.com/512/4712/4712106.png";
+document.getElementById("chatbot-btn").onclick=()=>{
+    const win=document.getElementById("chat-window");
+    win.style.display=win.style.display==="flex"?"none":"flex";
+    if(!window.welcomed){ window.welcomed=true; setTimeout(()=>appendBot("Hello! I'm Orbis 🤖 — Ask anything about rides!"),300); }
+};
+function scrollChat(){ const box=document.getElementById("chat-body"); box.scrollTop=box.scrollHeight; }
+function appendUser(text){ document.getElementById("chat-body").insertAdjacentHTML("beforeend",`<div class='msg user-msg'>${text}</div>`); scrollChat(); }
+function appendBot(text, id=null){ const msgHtml=`<div class='msg bot-msg' ${id?`id="${id}"`:''}><img src='${botPfp}'><div>${text}</div></div>`; document.getElementById("chat-body").insertAdjacentHTML("beforeend", msgHtml); scrollChat(); return id; }
+function sendChat(){
+    const input=document.getElementById("chat-text"); 
+    const msg=input.value.trim(); 
+    if(!msg) return; input.value="";
+    appendUser(msg);
+    const typingId='typing-indicator';
+    const typingContent=`<div class='msg bot-msg' id='${typingId}'><img src='${botPfp}'><div>Orbis is typing...</div></div>`;
+    document.getElementById("chat-body").insertAdjacentHTML("beforeend", typingContent); scrollChat();
+    fetch("/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:msg})})
+    .then(r=>{ const indicator=document.getElementById(typingId); if(indicator) indicator.remove(); if(!r.ok) throw new Error(r.status); return r.json(); })
+    .then(d=>{ appendBot(d.reply||"No reply from server.") })
+    .catch(e=>{ const indicator=document.getElementById(typingId); if(indicator) indicator.remove(); appendBot("Cannot connect to server."); });
+}
+
+// Draggable chat
+(() => {
+    const win=document.getElementById("chat-window");
+    const header=document.getElementById("chat-header");
+    let offsetX=0, offsetY=0, isDown=false;
+    header.addEventListener("mousedown", e=>{isDown=true; offsetX=win.offsetLeft-e.clientX; offsetY=win.offsetTop-e.clientY;});
+    document.addEventListener("mouseup", ()=>isDown=false);
+    document.addEventListener("mousemove", e=>{if(!isDown) return; win.style.left=(e.clientX+offsetX)+"px"; win.style.top=(e.clientY+offsetY)+"px";});
+    header.addEventListener("touchstart", e=>{isDown=true; let t=e.touches[0]; offsetX=win.offsetLeft-t.clientX; offsetY=win.offsetTop-t.clientY;});
+    document.addEventListener("touchend", ()=>isDown=false);
+    document.addEventListener("touchmove", e=>{if(!isDown) return; let t=e.touches[0]; win.style.left=(t.clientX+offsetX)+"px"; win.style.top=(t.clientY+offsetY)+"px";});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+# Core web framework
+flask
+
+# Data validation (for tool input/output models)
+pydantic
+
+# Distance calculations
+geopy
+numpy
+
+# AI Agent Development Kit (ADK) Python SDK
+git+https://github.com/google/adk-python.git
+
