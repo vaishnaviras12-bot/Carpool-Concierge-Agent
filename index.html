@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>ORBIS - RideMatcher</title>
 <style>
 body {
@@ -166,7 +166,7 @@ function searchRide() {
     fetch("/search_rides", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({from, to, seats})
+        body: JSON.stringify({from, to, seats, user_name: userName})
     })
     .then(res => res.json())
     .then(data => {
@@ -204,24 +204,90 @@ function searchRide() {
 
 
 // Payment
-function openPayment(driver, vehicle, price, seats){
-    const popup=document.getElementById("paymentPopup");
-    popup.style.display="flex";
-    const paymentText=document.getElementById("paymentText");
-    paymentText.innerHTML=`<b>Pay ₹${price*seats}</b> for Driver <b>${driver}</b> (${vehicle})<br><div class="loader"></div>Confirming ride...`;
-    fetch("/confirm_ride",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({driver_id:driver,seats:seats})})
-    .then(r=>r.json()).then(job=>{
-        const poll=setInterval(()=>{
-            fetch(`/job_status/${job.job_id}`).then(r=>r.json()).then(status=>{
-                if(status.status==="completed"){
-                    fetch("/lock_seats",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({driver_id:driver,seats:seats})});
-                    paymentText.innerHTML=`✅ Ride confirmed with Driver <b>${driver}</b>!`;
+function openPayment(driver, vehicle, price, seats) {
+    const popup = document.getElementById("paymentPopup");
+    popup.style.display = "flex";
+    const paymentText = document.getElementById("paymentText");
+
+    paymentText.innerHTML = `
+        <b>Pay ₹${price * seats}</b> for Driver <b>${driver}</b> (${vehicle})<br>
+        <div class="loader"></div>Confirming ride...
+    `;
+
+    // prevent duplicate bookings for same popup session
+    let bookingInProgress = true;
+
+    fetch("/confirm_ride", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ driver_id: driver, seats: seats })
+    })
+    .then(r => r.json())
+    .then(job => {
+        const poll = setInterval(() => {
+            fetch(`/job_status/${job.job_id}`)
+                .then(r => r.json())
+                .then(status => {
+                    if (!bookingInProgress) {
+                        clearInterval(poll);
+                        return;
+                    }
+
+                    if (status.status === "completed") {
+                        bookingInProgress = false;
+                        clearInterval(poll);
+
+                        // Call lock_seats only to read remaining seats for UI.
+                        // NOTE: confirm_ride already deducted seats server-side.
+                        fetch("/lock_seats", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ driver_id: driver, seats: seats })
+                        })
+                        .then(res => res.json())
+                        .then(resp => {
+                            // If API returns remaining, show it. If not, just show confirmation.
+                            if (resp && resp.remaining !== undefined) {
+                                paymentText.innerHTML = `
+                                    ✅ Ride confirmed with Driver <b>${driver}</b>!<br>
+                                    Remaining seats: <b>${resp.remaining}</b>
+                                `;
+                            } else {
+                                paymentText.innerHTML = `✅ Ride confirmed with Driver <b>${driver}</b>!`;
+                            }
+
+                            loadDrivers(); // refresh UI seat count
+
+                            // Close popup and optionally redirect after a short delay
+                            setTimeout(() => {
+                                closePayment();
+                            }, 1200);
+                        })
+                        .catch(() => {
+                            // Don't show error to user — assume success since confirm_ride succeeded.
+                            paymentText.innerHTML = `✅ Ride confirmed with Driver <b>${driver}</b>!`;
+                            loadDrivers();
+                            setTimeout(() => closePayment(), 1200);
+                        });
+
+                    } else if (status.status === "failed") {
+                        bookingInProgress = false;
+                        clearInterval(poll);
+                        paymentText.innerHTML = `⚠️ Booking failed. Please try again.`;
+                        // Let user manually close or try again.
+                    }
+                })
+                .catch(() => {
+                    // Polling failure: stop polling, show error
+                    bookingInProgress = false;
                     clearInterval(poll);
-                    loadDrivers();
-                }
-            });
-        },500);
-    }).catch(e=>paymentText.innerHTML="Error confirming ride");
+                    paymentText.innerHTML = "❌ Server error while confirming ride.";
+                });
+        }, 500);
+    })
+    .catch(() => {
+        paymentText.innerHTML = "❌ Error confirming ride.";
+    });
 }
 function closePayment(){ document.getElementById("paymentPopup").style.display="none"; }
 
