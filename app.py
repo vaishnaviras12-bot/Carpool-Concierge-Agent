@@ -94,9 +94,15 @@ def job_status(job_id):
 def lock_seats():
     data = request.json
     driver_id = data.get("driver_id")
-    seats = int(data.get("seats", 1))
-    success = confirm_ride(driver_id, seats)
-    return jsonify({"status": "locked" if success else "failed"})
+    seats_needed = int(data.get("seats", 1))
+
+    for d in DRIVERS:
+        if d.id == driver_id:
+            return jsonify({"status": "locked", "remaining": d.seats})
+
+    return jsonify({"status": "failed", "msg": "driver not found"}), 404
+
+
 
 
 # ---------------- Endpoint: Save Ride Request ----------------
